@@ -35,27 +35,36 @@ UCI EHR data → data quality audit → feature engineering → statistical anal
 CareRisk/
 ├── data/                  raw/processed data (gitignored — see data/README.md)
 ├── notebooks/             01_data_audit → 10_fairness_analysis
-├── sql/                   cohort/feature queries
-├── src/                   preprocessing.py, features.py, models.py, evaluation.py,
-│                          explainability.py, optimization.py
-├── app/                   streamlit_app.py
-├── reports/               executive_summary.pdf
+├── sql/                   load_db.py + cohort_analysis.sql, patient_features.sql (SQLite)
+├── src/                   preprocessing.py, features.py, transformers.py, models.py,
+│                          evaluation.py, explainability.py, optimization.py, fairness.py
+├── app/                   streamlit_app.py — 5-tab decision cockpit
+├── reports/               model_card.md
 └── requirements.txt
 ```
 
-## Status
+## Status — all phases complete
 
-- [x] Data acquisition + full column-by-column audit ([`notebooks/01_data_audit.ipynb`](notebooks/01_data_audit.ipynb))
-- [x] Cleaning decisions implemented ([`src/preprocessing.py`](src/preprocessing.py))
-- [ ] EDA
-- [ ] Statistical analysis (hypothesis tests, logistic regression baseline)
-- [ ] Feature engineering (utilization score, medication complexity, diagnosis grouping)
-- [ ] Model comparison (Logistic Regression / Random Forest / XGBoost)
-- [ ] Calibration + SHAP explainability
-- [ ] Decision simulator + optimization (capacity-constrained allocation)
-- [ ] Strategy comparison (random / highest-risk / utility-optimized)
-- [ ] Fairness audit
-- [ ] Streamlit app
+- [x] Data acquisition + full column-by-column audit ([`01_data_audit`](notebooks/01_data_audit.ipynb))
+- [x] EDA ([`02_eda`](notebooks/02_eda.ipynb))
+- [x] Statistical analysis — chi-square, Mann-Whitney, logistic regression odds ratios ([`03_statistical_analysis`](notebooks/03_statistical_analysis.ipynb))
+- [x] Feature engineering — utilization score, medication complexity, diagnosis grouping ([`04_feature_engineering`](notebooks/04_feature_engineering.ipynb))
+- [x] Model comparison — Logistic Regression / Random Forest / XGBoost, group-aware split ([`05_model_training`](notebooks/05_model_training.ipynb), [`06_model_evaluation`](notebooks/06_model_evaluation.ipynb))
+- [x] SHAP explainability, incl. a real rare-category noise issue found and fixed ([`07_shap_analysis`](notebooks/07_shap_analysis.ipynb))
+- [x] Decision simulator ([`08_decision_simulation`](notebooks/08_decision_simulation.ipynb))
+- [x] Optimization — LP-verified capacity-constrained allocation, risk-vs-benefit sensitivity sweep ([`09_optimization`](notebooks/09_optimization.ipynb))
+- [x] Fairness audit ([`10_fairness_analysis`](notebooks/10_fairness_analysis.ipynb))
+- [x] Streamlit decision cockpit ([`app/streamlit_app.py`](app/streamlit_app.py))
+
+See [`reports/model_card.md`](reports/model_card.md) for a one-page summary of performance, key findings, and limitations.
+
+## Headline results
+
+- **XGBoost**: ROC-AUC 0.668, PR-AUC 0.227 (test set, n=20,075) — beats Logistic Regression and Random Forest baselines, in line with published results on this exact dataset.
+- **Top driver**: prior inpatient visits (`number_inpatient`) — confirmed independently by EDA, statistical effect size, and SHAP.
+- **Capacity-constrained targeting beats random by ~4.5x** in expected net benefit at the same capacity (500 patients).
+- **Risk ≠ benefit — but only sometimes helps**: under an assumed effectiveness-varies-by-complexity scenario, utility-optimized targeting selects a meaningfully different patient set than highest-risk targeting (~55% overlap), but still *underperforms* highest-risk on realized outcomes here — documented honestly with a full sensitivity sweep rather than tuned to fit the "utility wins" narrative. See `09_optimization.ipynb`.
+- **Fairness**: a real, moderate recall gap between African American and Caucasian patients (~3 points) — flagged, not resolved.
 
 ## Setup
 
@@ -63,4 +72,12 @@ CareRisk/
 pip install -r requirements.txt
 ```
 
-Then follow [`data/README.md`](data/README.md) to get the raw CSVs into `data/raw/`.
+Follow [`data/README.md`](data/README.md) to get the raw CSVs into `data/raw/`, then run the notebooks in order (01 → 10) or the equivalent `src/` scripts to regenerate `data/processed/`. `python sql/load_db.py` loads the featured data into a local SQLite db for the cohort queries in `sql/`.
+
+## Run the app
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Five tabs: Overview (model comparison), Resource Allocation (live what-if simulator — capacity/cost/effectiveness sliders), Risk Drivers (SHAP), Patient Explorer (per-patient local explanation), Fairness (subgroup audit).
