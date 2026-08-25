@@ -36,7 +36,7 @@ CareRisk/
 ├── data/                  raw/processed data (gitignored — see data/README.md)
 ├── notebooks/             01_data_audit → 10_fairness_analysis
 ├── sql/                   load_db.py + cohort_analysis.sql, patient_features.sql (SQLite)
-├── src/                   preprocessing.py, features.py, transformers.py, models.py,
+├── src/                   preprocessing.py, features.py, rare_category.py, models.py,
 │                          evaluation.py, explainability.py, optimization.py, fairness.py
 ├── app/                   streamlit_app.py — 5-tab decision cockpit
 ├── reports/               model_card.md

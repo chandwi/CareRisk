@@ -31,7 +31,7 @@ Prior inpatient visits (`number_inpatient`) is by far the dominant driver — co
 
 ## A real methodological issue we found and fixed
 
-The first SHAP pass was dominated by categorical levels with under ~50 training observations (e.g. a discharge-disposition code with 21 rows) — tree models fit noise to near-empty categories, and SHAP faithfully reported that unreliable reliance. Fixed with `RareCategoryCollapser` (`src/transformers.py`): rare levels are merged into their column's mode, fit on the training fold only. Documented in detail in `notebooks/07_shap_analysis.ipynb`.
+The first SHAP pass was dominated by categorical levels with under ~50 training observations (e.g. a discharge-disposition code with 21 rows) — tree models fit noise to near-empty categories, and SHAP faithfully reported that unreliable reliance. Fixed with `RareCategoryCollapser` (`src/rare_category.py`): rare levels are merged into their column's mode, fit on the training fold only. Documented in detail in `notebooks/07_shap_analysis.ipynb`.
 
 ## Decision layer — risk vs. benefit
 

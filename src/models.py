@@ -14,7 +14,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
-from transformers import RareCategoryCollapser
+from rare_category import RareCategoryCollapser
 
 TARGET_COL = "readmitted_30d"
 GROUP_COL = "patient_nbr"
