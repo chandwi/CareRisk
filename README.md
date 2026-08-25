@@ -76,8 +76,22 @@ Follow [`data/README.md`](data/README.md) to get the raw CSVs into `data/raw/`, 
 
 ## Run the app
 
+**Live demo:** _add your Streamlit Community Cloud URL here after deploying_
+
 ```bash
 streamlit run app/streamlit_app.py
 ```
 
 Five tabs: Overview (model comparison), Resource Allocation (live what-if simulator — capacity/cost/effectiveness sliders), Risk Drivers (SHAP), Patient Explorer (per-patient local explanation), Fairness (subgroup audit).
+
+The app reads from `app/assets/` (fitted models + a trimmed test-split/demographics bundle, ~28MB, committed to the repo) rather than the full `data/processed/` pipeline output — that keeps the deployed app self-contained on a fresh clone with no local pipeline run required. After retraining, regenerate it with:
+
+```bash
+python app/prepare_assets.py
+```
+
+### Deploying to Streamlit Community Cloud
+
+1. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub (chandwi).
+2. "New app" → repo `chandwi/CareRisk`, branch `master`, main file path `app/streamlit_app.py`.
+3. Deploy. First build takes a few minutes (installs `requirements.txt`); subsequent pushes to `master` auto-redeploy.

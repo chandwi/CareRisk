@@ -13,6 +13,7 @@ import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent.parent
+ASSETS = ROOT / "app" / "assets"
 sys.path.insert(0, str(ROOT / "src"))
 
 from evaluation import compare_models, recall_at_capacity  # noqa: E402
@@ -27,19 +28,19 @@ st.set_page_config(page_title="CareRisk", layout="wide")
 @st.cache_resource
 def load_models():
     return {
-        name: joblib.load(ROOT / f"data/processed/models/{name}.joblib")
+        name: joblib.load(ASSETS / f"{name}.joblib")
         for name in ["logistic_regression", "random_forest", "xgboost"]
     }
 
 
 @st.cache_resource
-def load_splits():
-    return joblib.load(ROOT / "data/processed/models/splits.joblib")
+def load_test_split():
+    return joblib.load(ASSETS / "test_split.joblib")
 
 
 @st.cache_data
-def load_features():
-    return pd.read_csv(ROOT / "data/processed/diabetic_data_features.csv")
+def load_demo():
+    return pd.read_csv(ASSETS / "demo_subset.csv", index_col=0)
 
 
 @st.cache_data
@@ -50,9 +51,8 @@ def compute_shap(_pipe, _X_test):
 
 
 models = load_models()
-X_train, X_test, y_train, y_test = load_splits()
-features_df = load_features()
-demo = features_df.loc[X_test.index, ["race", "gender", "age"]]
+X_test, y_test = load_test_split()
+demo = load_demo()
 
 xgb_pipe = models["xgboost"]
 risk = xgb_pipe.predict_proba(X_test)[:, 1]
