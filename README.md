@@ -84,7 +84,7 @@ streamlit run app/streamlit_app.py
 
 Five tabs: Overview (model comparison), Resource Allocation (live what-if simulator — capacity/cost/effectiveness sliders), Risk Drivers (SHAP), Patient Explorer (per-patient local explanation), Fairness (subgroup audit).
 
-The app reads from `app/assets/` (fitted models + a trimmed test-split/demographics bundle, ~28MB, committed to the repo) rather than the full `data/processed/` pipeline output — that keeps the deployed app self-contained on a fresh clone with no local pipeline run required. After retraining, regenerate it with:
+The app trains fresh at startup (~10s, cached for the app instance's lifetime) from `app/assets/diabetic_data_features.csv` (~23MB, committed to the repo) rather than unpickling pre-fit models — fitted sklearn/xgboost objects aren't guaranteed compatible across library versions, and a deploy environment resolving a newer scikit-learn than the one that trained the pickle will fail to load it. Training fresh sidesteps that entirely. After regenerating `data/processed/diabetic_data_features.csv`, refresh the deploy CSV with:
 
 ```bash
 python app/prepare_assets.py

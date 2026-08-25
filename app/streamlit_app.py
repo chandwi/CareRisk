@@ -7,7 +7,6 @@ Run from the CareRisk project root:
 import sys
 from pathlib import Path
 
-import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -19,28 +18,25 @@ sys.path.insert(0, str(ROOT / "src"))
 from evaluation import compare_models, recall_at_capacity  # noqa: E402
 from explainability import explain_patient, get_shap_values, global_importance  # noqa: E402
 from fairness import subgroup_metrics  # noqa: E402
+from models import train_all  # noqa: E402
 from optimization import compare_strategies, expected_net_benefit, select_top_k_greedy, threshold_sweep  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
 st.set_page_config(page_title="CareRisk", layout="wide")
 
 
-@st.cache_resource
-def load_models():
-    return {
-        name: joblib.load(ASSETS / f"{name}.joblib")
-        for name in ["logistic_regression", "random_forest", "xgboost"]
-    }
-
-
-@st.cache_resource
-def load_test_split():
-    return joblib.load(ASSETS / "test_split.joblib")
-
-
-@st.cache_data
-def load_demo():
-    return pd.read_csv(ASSETS / "demo_subset.csv", index_col=0)
+@st.cache_resource(show_spinner="Training models (Logistic Regression, Random Forest, XGBoost)...")
+def load_models_and_split():
+    """Trains fresh rather than unpickling pre-fit models. Fitted sklearn/xgboost
+    objects aren't guaranteed compatible across library versions — shipping
+    pickles risks a deploy environment with a newer scikit-learn breaking on
+    load (this bit us once already). Training from the committed feature CSV
+    takes well under a minute and is cached for the life of the app instance,
+    so it only happens once per deploy/reboot."""
+    df = pd.read_csv(ASSETS / "diabetic_data_features.csv")
+    fitted, (X_train, X_test, y_train, y_test) = train_all(df)
+    demo = df.loc[X_test.index, ["race", "gender", "age"]]
+    return fitted, X_test, y_test, demo
 
 
 @st.cache_data
@@ -50,9 +46,7 @@ def compute_shap(_pipe, _X_test):
     return imp, shap_values, X_transformed_df, X_sample, explainer
 
 
-models = load_models()
-X_test, y_test = load_test_split()
-demo = load_demo()
+models, X_test, y_test, demo = load_models_and_split()
 
 xgb_pipe = models["xgboost"]
 risk = xgb_pipe.predict_proba(X_test)[:, 1]
